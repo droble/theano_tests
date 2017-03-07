@@ -5,7 +5,7 @@ Created on Mon Mar 06 22:25:31 2017
 @author: Admin
 """
 
-import numpy
+import numpy as np
 import theano
 import theano.tensor as T
 from theano import pp
