@@ -21,7 +21,19 @@ def doScalarDerivative() :
 
     # end doScalarDerivative
 
-X = T.dmatrix( 'X' )
-S = 1 / ( 1 + T.exp( -X ) )
-logistic = theano.function( [X], S )
+def doSimpleLogistic() :
+    X = T.dmatrix( 'X' )
+    S = 1 / ( 1 + T.exp( -X ) )
+    logistic = theano.function( [X], S )
+    
+    print logistic( [[0, 1], [-1, -2]] ) 
 
+    # end doSimpleLogistic
+
+def logisticRegression() :
+    
+    
+    X = T.dmatrix( "X" ) 
+    Y = T.dmatrix( "Y" )
+    
+    
