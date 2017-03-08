@@ -10,11 +10,30 @@ import theano
 import theano.tensor as T
 from theano import pp
 
-x = T.dscalar( 'x' )
-y = x ** 2
-dy = T.grad( y, x )
+def doScalarDerivative() : 
+    x = T.dscalar( 'x' )
+    y = x ** 2
+    dy = T.grad( y, x )
+    
+    f = theano.function( [x], dy )
+    
+    print f(4)
 
-f = theano.function( [x], dy )
+    # end doScalarDerivative
 
-print f(4)
+def doSimpleLogistic() :
+    X = T.dmatrix( 'X' )
+    S = 1 / ( 1 + T.exp( -X ) )
+    logistic = theano.function( [X], S )
+    
+    print logistic( [[0, 1], [-1, -2]] ) 
 
+    # end doSimpleLogistic
+
+def logisticRegression() :
+    
+    
+    X = T.dmatrix( "X" ) 
+    Y = T.dmatrix( "Y" )
+    
+    
