@@ -56,8 +56,8 @@ def logisticRegression ( input_values, target_class, training_steps = 10 ) :
         
     # Declare the symbolic variables. 
         
-    X = T.dmatrix( "X" ) 
-    Y = T.dvector( "Y" )
+    x = T.dmatrix( "x" ) 
+    y = T.dvector( "y" )
     
     # Initialize the weight vector and the bias. 
     
@@ -75,24 +75,24 @@ def logisticRegression ( input_values, target_class, training_steps = 10 ) :
     
     # Construct the Theano expression graph. 
     
-    t = T.dot( X, w ) - b
+    t = T.dot( x, w ) + b
     p_1 = 1 / ( 1 + T.exp( -t ) )
     
     prediction = p_1 > 0.5 
     
-    xent = -Y * T.log( p_1 ) - ( 1 - Y ) * T.log( 1 - p_1 )
+    xent = -y * T.log( p_1 ) - ( 1 - y ) * T.log( 1 - p_1 )
     cost = xent.mean() + 0.01 * ( w ** 2 ).sum() 
     
     dw, db = T.grad ( cost, [w, b] )
     
     # Compile it. 
     
-    train = theano.function( inputs = [X, Y], 
+    train = theano.function( inputs = [x, y], 
                              outputs = [prediction, xent], 
                              updates = ( ( w, w - 0.1 * dw ), 
                                          ( b, b - 0.1 * db ) ) )
                                          
-    predict = theano.function( inputs = [X], outputs = prediction )
+    predict = theano.function( inputs = [x], outputs = prediction )
     
     # Try an initial prediction. 
     
@@ -102,13 +102,13 @@ def logisticRegression ( input_values, target_class, training_steps = 10 ) :
     # Train it! 
     
     for i in xrange( training_steps ) : 
-        pred, err = train ( ( input_values, target_class ) )
+        pred, err = train ( input_values, target_class )
         
     print( "Final model:" )
     print( w.get_value() )
     print( b.get_value() )
     print( "target values for D:" )
-    print( input_values )
+    print( target_class )
     print( "prediction on D:" )
     print( predict( input_values ) )
                                 
