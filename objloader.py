@@ -6,8 +6,9 @@ Created on Wed Mar 29 14:53:13 2017
 """
 import numpy as np
 
-import plotly.offline as py
-from plotly.tools import FigureFactory as FF
+import plotly
+import plotly.offline as pyoff
+
 
 def MTL( filename ) :
     contents = {}
@@ -97,61 +98,57 @@ class OBJ:
                 my_mtl = MTL(values[1])
                 
             elif values[0] == 'f' or values[0] == 'fo' :
-                face = []
-                texcoords = []
-                norms = []
                 
-                for v in values[1:4]:
-                    
-                    w = v.split('/')
-                    
-                    face.append( int(w[0]) -1 )
-                    
-                    if len(w) >= 2 and len(w[1]) > 0:
-                        texcoords.append(int(w[1]))
-                    else:
-                        texcoords.append(0)
-                        
-                    if len(w) >= 3 and len(w[2]) > 0:
-                        norms.append(int(w[2]))
-                    else:
-                        norms.append(0)
-                    
-                if len(face) == 3 : 
-                    my_faces.append( face )
-                    my_face_normals.append( norms )
-                    my_face_texcoords.append( texcoords )
-                    self.face_materials.append( material )
-                        
-                # Deal with quads. 
-                        
-                face = []
-                texcoords = []
-                norms = []       
+                # At this point, I insist that all geometry be triangulized. 
+                # So, read in the faces and triangulate them. This assumes all 
+                # faces are convex. This will fail SO HARD with concave faces.
+                # First, get rid of the "f". 
                 
-                if ( len(values[1:]) == 4 ):
-                    for v in ( values[3], values[4], values[1] ) :
-                        
+                values = values[1:]
+
+                # Loop until we don't have any triangles in the face. (Faces 
+                # with less than three vertices will be ignored.)
+
+                while len( values ) > 2 : 
+                    
+                    # Process the triangle at the front of the list. 
+
+                    face = []
+                    texcoords = []
+                    norms = []
+                    
+                    for v in values[0:3] : 
+                    
                         w = v.split('/')
-                        
+                    
                         face.append( int(w[0]) -1 )
-                        
+                    
                         if len(w) >= 2 and len(w[1]) > 0:
                             texcoords.append(int(w[1]))
                         else:
                             texcoords.append(0)
-                            
+                        
                         if len(w) >= 3 and len(w[2]) > 0:
                             norms.append(int(w[2]))
                         else:
-                            norms.append(0)    
-                
-                if len( face ) == 3 : 
+                            norms.append(0)
+                    
+                    # Put the new face information in the master lists. 
+
                     my_faces.append( face )
                     my_face_normals.append( norms )
                     my_face_texcoords.append( texcoords )
                     self.face_materials.append( material )
 
+                    # Now, remove the center vertex in the triangle,
+                    # we will never use it again. And rotate the list. 
+
+                    values.pop( 1 )
+                    values = values[1:] + values[:1]
+
+                # end while
+
+            # end elif
         
         self.vertices       = np.asarray( my_vertices )
         self.normals        = np.asarray( my_normals )
@@ -167,12 +164,32 @@ class OBJ:
 def plotOBJ ( obj, cmap = 'YlOrRd', title="3D Object" ) : 
     """Use plotly to plot a Wavefront obj file on your web browser.""" 
 
-    fig = FF.create_trisurf( x = obj.vertices[:,0], 
-                             y = obj.vertices[:,1],
-                             z = obj.vertices[:,2], 
-                             simplices = obj.faces, 
-                             colormap = cmap, 
-                             title = title )
-    py.plot( fig )
+    # Plotly uses a square aspect ratio no matter what. This can
+    # distort the heck out of the data. Figure out the appropriate
+    # aspect ratio.
+
+    vmax = np.max( obj.vertices, axis = 0 )
+    vmin = np.min( obj.vertices, axis = 0 )
+    
+    extent = vmax - vmin
+    minaxis = np.min( extent )
+
+    if minaxis > 0 :
+        extent = extent / minaxis
+    else :
+        extent = np.asarray( [ 1, 1, 1 ] )
+
+    fig = plotly.figure_factory.create_trisurf \
+          ( x = obj.vertices[:,0], 
+            y = obj.vertices[:,1],
+            z = obj.vertices[:,2], 
+            simplices = obj.faces, 
+            colormap = cmap, 
+            title = title,
+            aspectratio = { 'x' : extent[0],
+                            'y' : extent[1],
+                            'z' : extent[2] } )
+
+    pyoff.plot( fig )
 
 # end plotOBJ
