@@ -7,22 +7,23 @@ Created on Tue Apr  4 17:43:44 2017
 
 import numpy as np 
 
-def adjacencyMatrix( faces, numverts = None ) : 
+def adjacencyMatrix( omesh ) : 
     """Makes an adjaceny matrix from the faces of a polygonal structure."""
-
-    if not numverts :     
-        numverts = np.amax( faces ) - np.amin( faces ) + 1
-
-    if not numverts : 
-        raise ValueError( "adjacencyMatrix: no vertices in object" )
     
-    adj = np.zeros( ( numverts, numverts ) )
+    adj = np.zeros( ( omesh.n_vertices(), omesh.n_vertices() ) )
     
-    for f in obj.faces : 
-        for i in range ( -1, 2 ) : 
-            edge = np.sort( ( f[i], f[i+1] ) )
+    for fh in omesh.faces() : 
+
+        face = []
+
+        for vh in omesh.fv( fh ) :
+            face.append( vh.idx() )
+
+        for i in range ( -1, len( face ) - 1 ) : 
+            edge = np.sort( ( face[i], face[i+1] ) )
             adj[ edge[0], edge[1] ] = 1
             
-    return adj
+    return adj + adj.T
     
 # end adjacencyMatrix
+

@@ -8,9 +8,10 @@ import numpy as np
 
 import plotly
 import plotly.offline as pyoff
+import plotly.figure_factory as plff
 
 
-def MTL( filename ) :
+def readMTL( filename ) :
     contents = {}
     mtl = None
     
@@ -38,11 +39,12 @@ def MTL( filename ) :
             mtl[values[0]] = map(float, values[1:])
     return contents
 
-# end MTL
+# end readMTL
 
-class OBJ:
+class objMesh :
     def __init__( self ):
-        """Loads a Wavefront OBJ file. """
+        """A simple mesh representation that mimics (and can read)
+        Wavefront .obj files."""
         
         # I want to make sure that all the members are numpy arrays. So 
         # there's this. 
@@ -54,9 +56,26 @@ class OBJ:
         self.face_normals   = np.array( [[]] )
         self.face_texcoords = np.array( [[]] )
         self.face_materials = []
+
+    # end __init__
+
+    def clear( self ) :
+        """Clears out the object's data."""
+        
+        self.vertices       = np.array( [[]] )
+        self.normals        = np.array( [[]] ) 
+        self.texcoords      = np.array( [[]] ) 
+        self.faces          = []
+        self.face_normals   = np.array( [[]] )
+        self.face_texcoords = np.array( [[]] )
+        self.face_materials = []
+
+    # end clear
     
     def read( self, filename, swapyz=False ) : 
         """Loads a Wavefront .obj file.""" 
+        
+        clear( self )
         
         material = None
         my_vertices       = []
@@ -95,7 +114,7 @@ class OBJ:
                 material = values[1]
                 
             elif values[0] == 'mtllib':
-                my_mtl = MTL(values[1])
+                my_mtl = readMTL(values[1])
                 
             elif values[0] == 'f' or values[0] == 'fo' :
                 
@@ -153,15 +172,49 @@ class OBJ:
         self.vertices       = np.asarray( my_vertices )
         self.normals        = np.asarray( my_normals )
         self.texcoords      = np.asarray( my_texcoords )
-        self.faces          = np.asarray( my_faces, dtype=int )
+        self.faces          = my_faces
         self.face_normals   = np.asarray( my_face_normals, dtype=int )
         self.face_texcoords = np.asarray( my_face_texcoords, dtype=int )
 
     # end read
 
-# end class OBJ                
+    def openmesh ( self, om ) :
+        """Converts an Open Mesh representation into an simpler,
+        easier to plot using plotly representation based on the
+        Wavefront .obj file. """
 
-def plotOBJ ( obj, cmap = 'YlOrRd', title="3D Object" ) : 
+        self.clear()
+        
+        # Deal with the vertex locations. 
+
+        self.vertices = np.zeros( ( om.n_vertices(), 3 ) )
+
+        for vh in om.vertices() :
+            self.vertices[ vh.idx() ] = \
+                np.array ( [ om.point( vh )[0], 
+                             om.point( vh )[1], 
+                             om.point( vh )[2] ] )
+
+        # Now, the faces.
+
+        face_list = []
+        
+        for fh in om.faces() :
+
+            face = []
+            
+            for vh in mesh.fv( fh ) :
+                face.append( vh.idx() )
+
+            face_list.append( face )
+
+        self.faces = face_list
+
+    # end openmesh
+    
+# end class objMesh                
+
+def plotObjMesh ( obj, cmap = 'YlOrRd', title="3D Object" ) : 
     """Use plotly to plot a Wavefront obj file on your web browser.""" 
 
     # Plotly uses a square aspect ratio no matter what. This can
@@ -179,7 +232,7 @@ def plotOBJ ( obj, cmap = 'YlOrRd', title="3D Object" ) :
     else :
         extent = np.asarray( [ 1, 1, 1 ] )
 
-    fig = plotly.figure_factory.create_trisurf \
+    fig = plff.create_trisurf \
           ( x = obj.vertices[:,0], 
             y = obj.vertices[:,1],
             z = obj.vertices[:,2], 
@@ -192,4 +245,6 @@ def plotOBJ ( obj, cmap = 'YlOrRd', title="3D Object" ) :
 
     pyoff.plot( fig )
 
-# end plotOBJ
+# end plotObjMesh
+
+
